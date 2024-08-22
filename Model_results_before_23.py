@@ -1,18 +1,18 @@
-from functions_and_parameters import (
+from stocks.utils import (
     PreProccesing_train_for_final_prediction,
     organized_data_for_prediction,
     predict_todays_direction,
-    columns_to_merge_after_normalized,
-    columns_to_normalize,
-    columns_for_x,
-    column_for_y,
-    positive_column_for_real_money_check,
-    negative_column_for_real_money_check,
-    new_columns_for_x_temp,
-    XGB_clf,
-    group_name,
-    private_group_name,
-    no_trading_dates,
+    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+    COLUMNS_TO_NORMALIZE,
+    COLUMNS_FOR_X,
+    COLUMN_FOR_Y,
+    POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+    NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+    NEW_COLUMN_FOR_X_TEMP,
+    XGB_CLF,
+    GROUP_NAME,
+    PRIVATE_GROUP_NAME,
+    NO_TRADING_DAYS,
     WHATSAPP_ID,
     PHONE_NUMBER
 )
@@ -33,13 +33,13 @@ import pywhatkit as pwt
     final_negative_y_in_percentage_last_month,
     final_standard_scaler,
 ) = PreProccesing_train_for_final_prediction(
-    columns_to_merge_after_normalized,
-    columns_to_normalize,
-    columns_for_x,
-    column_for_y,
-    positive_column_for_real_money_check,
-    negative_column_for_real_money_check,
-    new_columns_for_x_temp,
+    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+    COLUMNS_TO_NORMALIZE,
+    COLUMNS_FOR_X,
+    COLUMN_FOR_Y,
+    POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+    NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+    NEW_COLUMN_FOR_X_TEMP,
     pca=False,
     adasyn=False,
     yf_df=True,
@@ -70,22 +70,22 @@ while datetime.now().hour < 23:
         time.sleep(60)
     if hour == 17 and minute == 40:
         proba, action, todays_row = predict_todays_direction(
-            XGB_clf,
+            XGB_CLF,
             final_train_data_for_prediction,
             final_train_lables_for_prediction,
             0.15,
             merged_dfs,
-            columns_for_x,
-            positive_column_for_real_money_check,
-            negative_column_for_real_money_check,
+            COLUMNS_FOR_X,
+            POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+            NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
             final_standard_scaler,
-            columns_to_normalize,
-            columns_to_merge_after_normalized,
-            new_columns_for_x_temp,
-            no_trading_dates,
+            COLUMNS_TO_NORMALIZE,
+            COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+            NEW_COLUMN_FOR_X_TEMP,
+            NO_TRADING_DAYS,
         )
         pwt.manual_send_message_to_someone(
-            private_group_name, action + " " + str(proba)
+            PRIVATE_GROUP_NAME, action + " " + str(proba)
         )
         time.sleep(60)
 
@@ -94,22 +94,22 @@ while datetime.now().hour < 23:
         time.sleep(60)
     if hour == 20 and minute == 40:
         proba, action, todays_row = predict_todays_direction(
-            XGB_clf,
+            XGB_CLF,
             final_train_data_for_prediction,
             final_train_lables_for_prediction,
             0.15,
             merged_dfs,
-            columns_for_x,
-            positive_column_for_real_money_check,
-            negative_column_for_real_money_check,
+            COLUMNS_FOR_X,
+            POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+            NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
             final_standard_scaler,
-            columns_to_normalize,
-            columns_to_merge_after_normalized,
-            new_columns_for_x_temp,
-            no_trading_dates,
+            COLUMNS_TO_NORMALIZE,
+            COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+            NEW_COLUMN_FOR_X_TEMP,
+            NO_TRADING_DAYS,
         )
         pwt.manual_send_message_to_someone(
-            private_group_name, action + " " + str(proba)
+            PRIVATE_GROUP_NAME, action + " " + str(proba)
         )
         time.sleep(60)
 
@@ -119,22 +119,22 @@ while datetime.now().hour < 23:
         time.sleep(60)
     if hour == 22 and minute == 55:
         proba, action, todays_row = predict_todays_direction(
-            XGB_clf,
+            XGB_CLF,
             final_train_data_for_prediction,
             final_train_lables_for_prediction,
             0.15,
             merged_dfs,
-            columns_for_x,
-            positive_column_for_real_money_check,
-            negative_column_for_real_money_check,
+            COLUMNS_FOR_X,
+            POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+            NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
             final_standard_scaler,
-            columns_to_normalize,
-            columns_to_merge_after_normalized,
-            new_columns_for_x_temp,
-            no_trading_dates,
+            COLUMNS_TO_NORMALIZE,
+            COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+            NEW_COLUMN_FOR_X_TEMP,
+            NO_TRADING_DAYS,
         )
         pwt.manual_send_message_to_someone(
-            private_group_name, action + " " + str(proba)
+            PRIVATE_GROUP_NAME, action + " " + str(proba)
         )
         time.sleep(30)
         break
@@ -142,28 +142,28 @@ while datetime.now().hour < 23:
 
 while True:
     proba, action, todays_row = predict_todays_direction(
-        XGB_clf,
+        XGB_CLF,
         final_train_data_for_prediction,
         final_train_lables_for_prediction,
         0.15,
         merged_dfs,
-        columns_for_x,
-        positive_column_for_real_money_check,
-        negative_column_for_real_money_check,
+        COLUMNS_FOR_X,
+        POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+        NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
         final_standard_scaler,
-        columns_to_normalize,
-        columns_to_merge_after_normalized,
-        new_columns_for_x_temp,
-        no_trading_dates,
+        COLUMNS_TO_NORMALIZE,
+        COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+        NEW_COLUMN_FOR_X_TEMP,
+        NO_TRADING_DAYS,
     )
     print("Sending message. The time is: ", str(datetime.now()))
     print(str(proba))
-    pwt.manual_send_message_to_someone(group_name, action + " " + str(proba))
+    pwt.manual_send_message_to_someone(GROUP_NAME, action + " " + str(proba))
     time.sleep(30)
     pwt.sendwhatmsg_instantly_to_a_number(PHONE_NUMBER, action + " " + str(proba))
     time.sleep(20)
 
-    pwt.manual_send_message_to_someone(private_group_name, str(todays_row))
+    pwt.manual_send_message_to_someone(PRIVATE_GROUP_NAME, str(todays_row))
     break
 
 while datetime.now().hour < 23:
@@ -171,25 +171,25 @@ while datetime.now().hour < 23:
 time.sleep(120)
 while True:
     proba, action, todays_row = predict_todays_direction(
-        XGB_clf,
+        XGB_CLF,
         final_train_data_for_prediction,
         final_train_lables_for_prediction,
         0.15,
         merged_dfs,
-        columns_for_x,
-        positive_column_for_real_money_check,
-        negative_column_for_real_money_check,
+        COLUMNS_FOR_X,
+        POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+        NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
         final_standard_scaler,
-        columns_to_normalize,
-        columns_to_merge_after_normalized,
-        new_columns_for_x_temp,
-        no_trading_dates,
+        COLUMNS_TO_NORMALIZE,
+        COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+        NEW_COLUMN_FOR_X_TEMP,
+        NO_TRADING_DAYS,
     )
     print("Sending message. The time is: ", str(datetime.now()))
     pwt.sendwhatmsg_instantly_to_a_number(PHONE_NUMBER, action + " " + str(proba))
     time.sleep(30)
-    pwt.manual_send_message_to_someone(group_name, action + " " + str(proba))
+    pwt.manual_send_message_to_someone(GROUP_NAME, action + " " + str(proba))
     time.sleep(30)
 
-    pwt.manual_send_message_to_someone(private_group_name, str(todays_row))
+    pwt.manual_send_message_to_someone(PRIVATE_GROUP_NAME, str(todays_row))
     break

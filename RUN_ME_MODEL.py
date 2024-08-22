@@ -1,36 +1,28 @@
-from functions_and_parameters import (
-    PreProccesing_train_for_final_prediction,
-    organized_data_for_prediction,
-    predict_today,
-    second_predict_todays_direction,
-    columns_for_x,
-    columns_to_normalize,
-    columns_to_merge_after_normalized,
-    column_for_y,
-    positive_column_for_real_money_check,
-    negative_column_for_real_money_check,
-    new_columns_for_x_temp,
-    remove_lst,
-    WHATSAPP_ID,
-    PHONE_NUMBER,
-)
 import time
 import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 import warnings
 import pywhatkit as pwt
 
-from xgboost import XGBClassifier
 
-pd.set_option("display.max_columns", None)
-warnings.filterwarnings("ignore")
-
-
-for i in remove_lst:
-    new_columns_for_x_temp.remove(i)
-XGB_clf = XGBClassifier(verbosity=0)
-group_name = "Test_group"
+from utils import (
+    PreProccesing_train_for_final_prediction,
+    organized_data_for_prediction,
+    predict_today,
+    second_predict_todays_direction,
+)
+from params import (
+    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+    COLUMNS_TO_NORMALIZE,
+    COLUMNS_FOR_X,
+    POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+    NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+    NEW_COLUMN_FOR_X_TEMP,
+    XGB_CLF,
+    GROUP_NAME,
+    COLUMN_FOR_Y,
+    WHATSAPP_ID,
+)
 
 
 def main(
@@ -43,7 +35,7 @@ def main(
     if hour == 23:
         now = datetime.now()
         hour = now.hour
-        pwt.manual_send_message_to_someone(group_name, "Making the final decision...")
+        pwt.manual_send_message_to_someone(GROUP_NAME, "Making the final decision...")
         if hour != 23:
             before_midnight = False
         else:
@@ -64,21 +56,21 @@ def main(
         ) = organized_data_for_prediction(before_midnight, yf_df=True)
         x_test, _, _ = predict_today(
             merged_dfs,
-            columns_for_x,
-            positive_column_for_real_money_check,
-            negative_column_for_real_money_check,
+            COLUMNS_FOR_X,
+            POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+            NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
             final_standard_scaler,
-            columns_to_normalize,
-            columns_to_merge_after_normalized,
-            new_columns_for_x_temp,
+            COLUMNS_TO_NORMALIZE,
+            COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+            NEW_COLUMN_FOR_X_TEMP,
             pca=False,
         )
 
         todays_row = pd.DataFrame(x_test.iloc[-1]).T
-        no_trading_dates = ["2021-09-06", "2021-11-25", "2021-12-24"]
+        NO_TRADING_DAYS = ["2021-09-06", "2021-11-25", "2021-12-24"]
 
         while True:
-            if todays_row.index in no_trading_dates:
+            if todays_row.index in NO_TRADING_DAYS:
                 todays_row.index = todays_row.index + timedelta(days=1)
                 todays_row["Weekday"] += 1
                 if list(todays_row["Weekday"])[0] == 5:
@@ -91,7 +83,7 @@ def main(
                 break
         print(todays_row)
         proba, action = second_predict_todays_direction(
-            XGB_clf,
+            XGB_CLF,
             final_train_data_for_prediction,
             todays_row,
             final_train_lables_for_prediction,
@@ -124,13 +116,13 @@ if run_me:
         final_negative_y_in_percentage_last_month,
         final_standard_scaler,
     ) = PreProccesing_train_for_final_prediction(
-        columns_to_merge_after_normalized,
-        columns_to_normalize,
-        columns_for_x,
-        column_for_y,
-        positive_column_for_real_money_check,
-        negative_column_for_real_money_check,
-        new_columns_for_x_temp,
+        COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+        COLUMNS_TO_NORMALIZE,
+        COLUMNS_FOR_X,
+        COLUMN_FOR_Y,
+        POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+        NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+        NEW_COLUMN_FOR_X_TEMP,
         pca=False,
         adasyn=False,
         yf_df=True,
