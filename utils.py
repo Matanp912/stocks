@@ -2,267 +2,35 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-
-pd.set_option("display.max_columns", None)
 import matplotlib.pyplot as plt
-import warnings
-
-warnings.filterwarnings("ignore")
 
 from sklearn.decomposition import PCA
 import pywhatkit as pwt
 
-from xgboost import XGBClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 
 
 from imblearn.over_sampling import ADASYN, SMOTE
 
+from params import (
+    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+    COLUMNS_TO_NORMALIZE,
+    COLUMNS_FOR_X,
+    POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+    NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+    NEW_COLUMN_FOR_X_TEMP,
+    XGB_CLF,
+    GROUP_NAME,
+    NO_TRADING_DAYS,
+    YF_DF_COLS,
+    YF_DF_RENAME,
+    DFS_NAMES,
+    CLOSE_DATA_DICT,
+    VOLUME_DATA_DICT,
+)
 
-# PARAMETERS:
-WHATSAPP_ID = "******************"
-PHONE_NUMBER = "+***************"
-
-columns_to_merge_after_normalized = [
-    "did_break_highest_all_time_amzn",
-    "did_break_highest_all_time_tsla",
-    "did_break_highest_all_time_msft",
-    "did_break_highest_all_time_fb",
-    "did_break_highest_all_time_googl",
-    "did_break_highest_all_time_aapl",
-    "did_break_highest_all_time_tecs",
-    "did_break_highest_all_time_spy",
-    "did_break_highest_all_time_bac",
-    "did_break_highest_all_time_ndaq",
-    "Positive_change_in_the_last_3_day",
-    "Positive_change_in_the_last_7_day",
-    "did_break_highest_all_time_tqqq",
-    "After Covid",
-    "Weekday",
-]
-columns_to_normalize = [
-    "change_in_percentage_for_7_day_amzn",
-    "Average_volume_for_7_day_amzn",
-    "Average_close_price_for_7_day_amzn",
-    "days_in_a_row_for_trend_amzn",
-    "previous_days_in_a_row_for_trend_amzn",
-    "change_in_percentage_for_7_day_tsla",
-    "Average_volume_for_7_day_tsla",
-    "Average_close_price_for_7_day_tsla",
-    "days_in_a_row_for_trend_tsla",
-    "previous_days_in_a_row_for_trend_tsla",
-    "change_in_percentage_for_7_day_msft",
-    "Average_volume_for_7_day_msft",
-    "Average_close_price_for_7_day_msft",
-    "days_in_a_row_for_trend_msft",
-    "previous_days_in_a_row_for_trend_msft",
-    "change_in_percentage_for_7_day_fb",
-    "Average_volume_for_7_day_fb",
-    "Average_close_price_for_7_day_fb",
-    "days_in_a_row_for_trend_fb",
-    "previous_days_in_a_row_for_trend_fb",
-    "change_in_percentage_for_7_day_googl",
-    "Average_volume_for_7_day_googl",
-    "Average_close_price_for_7_day_googl",
-    "days_in_a_row_for_trend_googl",
-    "previous_days_in_a_row_for_trend_googl",
-    "change_in_percentage_for_7_day_aapl",
-    "Average_volume_for_7_day_aapl",
-    "Average_close_price_for_7_day_aapl",
-    "days_in_a_row_for_trend_aapl",
-    "previous_days_in_a_row_for_trend_aapl",
-    "change_in_percentage_for_7_day_spy",
-    "Average_close_price_for_7_day_spy",
-    "days_in_a_row_for_trend_spy",
-    "previous_days_in_a_row_for_trend_spy",
-    "change_in_percentage_for_7_day_uvxy",
-    "Average_close_price_for_7_day_uvxy",
-    "days_in_a_row_for_trend_uvxy",
-    "previous_days_in_a_row_for_trend_uvxy",
-    "change_in_percentage_for_7_day_tqqq",
-    "Average_close_price_for_7_day_tqqq",
-    "days_in_a_row_for_trend_tqqq",
-    "previous_days_in_a_row_for_trend_tqqq",
-    "change_in_percentage_for_7_day_bac",
-    "Average_volume_for_7_day_bac",
-    "Average_close_price_for_7_day_bac",
-    "days_in_a_row_for_trend_bac",
-    "previous_days_in_a_row_for_trend_bac",
-    "change_in_percentage_for_7_day_ndaq",
-    "Average_volume_for_7_day_ndaq",
-    "Average_close_price_for_7_day_ndaq",
-    "days_in_a_row_for_trend_ndaq",
-    "previous_days_in_a_row_for_trend_ndaq",
-    "change_in_percentage_for_7_day_tecs",
-    "Average_volume_for_7_day_tecs",
-    "Average_close_price_for_7_day_tecs",
-    "days_in_a_row_for_trend_tecs",
-    "previous_days_in_a_row_for_trend_tecs",
-]
-columns_for_x = [
-    "did_break_highest_all_time_amzn",
-    "did_break_highest_all_time_tsla",
-    "did_break_highest_all_time_msft",
-    "did_break_highest_all_time_fb",
-    "did_break_highest_all_time_googl",
-    "did_break_highest_all_time_aapl",
-    "did_break_highest_all_time_bac",
-    "did_break_highest_all_time_ndaq",
-    "did_break_highest_all_time_tecs",
-    "Positive_change_in_the_last_3_day",
-    "Positive_change_in_the_last_7_day",
-    "did_break_highest_all_time_tqqq",
-    "did_break_highest_all_time_spy",
-    "change_in_percentage_for_7_day_amzn",
-    "Average_volume_for_7_day_amzn",
-    "Average_close_price_for_7_day_amzn",
-    "days_in_a_row_for_trend_amzn",
-    "previous_days_in_a_row_for_trend_amzn",
-    "change_in_percentage_for_7_day_tsla",
-    "Average_volume_for_7_day_tsla",
-    "Average_close_price_for_7_day_tsla",
-    "days_in_a_row_for_trend_tsla",
-    "previous_days_in_a_row_for_trend_tsla",
-    "change_in_percentage_for_7_day_msft",
-    "Average_volume_for_7_day_msft",
-    "Average_close_price_for_7_day_msft",
-    "days_in_a_row_for_trend_msft",
-    "previous_days_in_a_row_for_trend_msft",
-    "change_in_percentage_for_7_day_fb",
-    "Average_volume_for_7_day_fb",
-    "Average_close_price_for_7_day_fb",
-    "days_in_a_row_for_trend_fb",
-    "previous_days_in_a_row_for_trend_fb",
-    "change_in_percentage_for_7_day_googl",
-    "Average_volume_for_7_day_googl",
-    "Average_close_price_for_7_day_googl",
-    "days_in_a_row_for_trend_googl",
-    "previous_days_in_a_row_for_trend_googl",
-    "change_in_percentage_for_7_day_aapl",
-    "Average_volume_for_7_day_aapl",
-    "Average_close_price_for_7_day_aapl",
-    "days_in_a_row_for_trend_aapl",
-    "previous_days_in_a_row_for_trend_aapl",
-    "change_in_percentage_for_7_day_spy",
-    "Average_close_price_for_7_day_spy",
-    "days_in_a_row_for_trend_spy",
-    "previous_days_in_a_row_for_trend_spy",
-    "change_in_percentage_for_7_day_uvxy",
-    "Average_close_price_for_7_day_uvxy",
-    "days_in_a_row_for_trend_uvxy",
-    "previous_days_in_a_row_for_trend_uvxy",
-    "change_in_percentage_for_7_day_tqqq",
-    "Average_close_price_for_7_day_tqqq",
-    "days_in_a_row_for_trend_tqqq",
-    "previous_days_in_a_row_for_trend_tqqq",
-    "change_in_percentage_for_7_day_bac",
-    "Average_volume_for_7_day_bac",
-    "Average_close_price_for_7_day_bac",
-    "days_in_a_row_for_trend_bac",
-    "previous_days_in_a_row_for_trend_bac",
-    "change_in_percentage_for_7_day_ndaq",
-    "Average_volume_for_7_day_ndaq",
-    "Average_close_price_for_7_day_ndaq",
-    "days_in_a_row_for_trend_ndaq",
-    "previous_days_in_a_row_for_trend_ndaq",
-    "change_in_percentage_for_7_day_tecs",
-    "Average_volume_for_7_day_tecs",
-    "Average_close_price_for_7_day_tecs",
-    "days_in_a_row_for_trend_tecs",
-    "previous_days_in_a_row_for_trend_tecs",
-    "After Covid",
-    "Weekday",
-]
-column_for_y = ["label_1_day"]
-positive_column_for_real_money_check = "tqqq_change_for_1_day"
-negative_column_for_real_money_check = "sqqq_change_for_1_day"
-new_columns_for_x_temp = columns_for_x.copy()
-remove_lst = [
-    "did_break_highest_all_time_amzn",
-    "did_break_highest_all_time_tsla",
-    "did_break_highest_all_time_msft",
-    "did_break_highest_all_time_fb",
-    "did_break_highest_all_time_googl",
-    "did_break_highest_all_time_aapl",
-    "did_break_highest_all_time_bac",
-    "did_break_highest_all_time_ndaq",
-    "did_break_highest_all_time_tecs",
-    "Positive_change_in_the_last_7_day",
-    "Positive_change_in_the_last_3_day",
-    "did_break_highest_all_time_tqqq",
-    "did_break_highest_all_time_spy",
-    "change_in_percentage_for_7_day_amzn",
-    "Average_volume_for_7_day_amzn",
-    "Average_close_price_for_7_day_amzn",
-    "days_in_a_row_for_trend_amzn",
-    "previous_days_in_a_row_for_trend_amzn",
-    "change_in_percentage_for_7_day_tsla",
-    "Average_volume_for_7_day_tsla",
-    "Average_close_price_for_7_day_tsla",
-    "days_in_a_row_for_trend_tsla",
-    "previous_days_in_a_row_for_trend_tsla",
-    "Average_volume_for_7_day_msft",
-    "Average_close_price_for_7_day_msft",
-    "previous_days_in_a_row_for_trend_msft",
-    "change_in_percentage_for_7_day_fb",
-    "Average_volume_for_7_day_fb",
-    "Average_close_price_for_7_day_fb",
-    "previous_days_in_a_row_for_trend_fb",
-    "change_in_percentage_for_7_day_googl",
-    "Average_volume_for_7_day_googl",
-    "Average_close_price_for_7_day_googl",
-    "days_in_a_row_for_trend_googl",
-    "previous_days_in_a_row_for_trend_googl",
-    "change_in_percentage_for_7_day_aapl",
-    "Average_volume_for_7_day_aapl",
-    "Average_close_price_for_7_day_aapl",
-    "days_in_a_row_for_trend_aapl",
-    "previous_days_in_a_row_for_trend_aapl",
-    "change_in_percentage_for_7_day_spy",
-    "Average_close_price_for_7_day_spy",
-    "days_in_a_row_for_trend_spy",
-    "previous_days_in_a_row_for_trend_spy",
-    "change_in_percentage_for_7_day_uvxy",
-    "Average_close_price_for_7_day_uvxy",
-    "days_in_a_row_for_trend_uvxy",
-    "previous_days_in_a_row_for_trend_uvxy",
-    "Average_close_price_for_7_day_tqqq",
-    "change_in_percentage_for_7_day_bac",
-    "Average_volume_for_7_day_bac",
-    "Average_close_price_for_7_day_bac",
-    "days_in_a_row_for_trend_bac",
-    "previous_days_in_a_row_for_trend_bac",
-    "change_in_percentage_for_7_day_ndaq",
-    "Average_volume_for_7_day_ndaq",
-    "Average_close_price_for_7_day_ndaq",
-    "days_in_a_row_for_trend_ndaq",
-    "Average_volume_for_7_day_tecs",
-    "Average_close_price_for_7_day_tecs",
-    "days_in_a_row_for_trend_tecs",
-    "previous_days_in_a_row_for_trend_tecs",
-    "After Covid",
-]
-for i in remove_lst:
-    new_columns_for_x_temp.remove(i)
-XGB_clf = XGBClassifier(verbosity=0)
-
-group_name = "test group"
-private_group_name = "Model documendation"
-no_trading_dates = [
-    "2021-09-06",
-    "2021-11-25",
-    "2021-12-24",
-    "2022-01-17",
-    "2022-02-21",
-    "2022-04-15",
-    "2022-05-30",
-    "2022-06-20",
-    "2022-07-04",
-    "2022-09-05",
-    "2022-11-24",
-    "2022-12-26",
-]
+pd.set_option("display.max_columns", None)
 
 
 def main_before_23(
@@ -272,7 +40,7 @@ def main_before_23(
     public=True,
 ):
     if public:
-        pwt.manual_send_message_to_someone(group_name, "Making the first decision...")
+        pwt.manual_send_message_to_someone(GROUP_NAME, "Making the first decision...")
 
     before_midnight = True
     (
@@ -291,34 +59,20 @@ def main_before_23(
     ) = organized_data_for_prediction(before_midnight, yf_df=True)
     x_test, _, _ = predict_today(
         merged_dfs,
-        columns_for_x,
-        positive_column_for_real_money_check,
-        negative_column_for_real_money_check,
+        COLUMNS_FOR_X,
+        POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+        NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
         final_standard_scaler,
-        columns_to_normalize,
-        columns_to_merge_after_normalized,
-        new_columns_for_x_temp,
+        COLUMNS_TO_NORMALIZE,
+        COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+        NEW_COLUMN_FOR_X_TEMP,
         pca=False,
     )
 
     todays_row = pd.DataFrame(x_test.iloc[-1]).T
-    no_trading_dates = [
-        "2021-09-06",
-        "2021-11-25",
-        "2021-12-24",
-        "2022-01-17",
-        "2022-02-21",
-        "2022-04-15",
-        "2022-05-30",
-        "2022-06-20",
-        "2022-07-04",
-        "2022-09-05",
-        "2022-11-24",
-        "2022-12-26",
-    ]
 
     while True:
-        if todays_row.index in no_trading_dates:
+        if todays_row.index in NO_TRADING_DAYS:
             todays_row.index = todays_row.index + timedelta(days=1)
             todays_row["Weekday"] += 1
             if list(todays_row["Weekday"])[0] == 5:
@@ -332,7 +86,7 @@ def main_before_23(
     print("todays_row")
     print(todays_row)
     proba, action = predict_todays_direction(
-        XGB_clf,
+        XGB_CLF,
         final_train_data_for_prediction,
         todays_row,
         final_train_lables_for_prediction,
@@ -353,40 +107,8 @@ def create_yf_df():
         data.iloc[-1:, 25] *= 2
         data.iloc[-1:, 23] /= 5
 
-    close_data = data["Close"].rename(
-        columns={
-            "AMZN": "AMZN_close",
-            "TSLA": "TSLA_close",
-            "MSFT": "MSFT_close",
-            "FB": "FB_close",
-            "GOOGL": "GOOGL_close",
-            "AAPL": "AAPL_close",
-            "SPY": "SPY_close",
-            "UVXY": "UVXY_close",
-            "TQQQ": "TQQQ_close",
-            "SQQQ": "SQQQ_close",
-            "BAC": "BAC_close",
-            "NDAQ": "NDAQ_close",
-            "TECS": "TECS_close",
-        }
-    )
-    Volume_data = data["Volume"].rename(
-        columns={
-            "AMZN": "AMZN_volume",
-            "TSLA": "TSLA_volume",
-            "MSFT": "MSFT_volume",
-            "FB": "FB_volume",
-            "GOOGL": "GOOGL_volume",
-            "AAPL": "AAPL_volume",
-            "SPY": "SPY_volume",
-            "UVXY": "UVXY_volume",
-            "TQQQ": "TQQQ_volume",
-            "SQQQ": "SQQQ_volume",
-            "BAC": "BAC_volume",
-            "NDAQ": "NDAQ_volume",
-            "TECS": "TECS_volume",
-        }
-    )
+    close_data = data["Close"].rename(columns=CLOSE_DATA_DICT)
+    Volume_data = data["Volume"].rename(columns=VOLUME_DATA_DICT)
 
     yf_df = pd.concat([close_data, Volume_data], axis=1).reset_index()
     yf_df["AMZN"] = ""
@@ -403,92 +125,7 @@ def create_yf_df():
     yf_df["NDAQ"] = ""
     yf_df["TECS"] = ""
 
-    yf_df = yf_df[
-        [
-            "AMZN",
-            "Date",
-            "AMZN_close",
-            "Date",
-            "AMZN_volume",
-            "TSLA",
-            "Date",
-            "TSLA_close",
-            "Date",
-            "TSLA_volume",
-            "MSFT",
-            "Date",
-            "MSFT_close",
-            "Date",
-            "MSFT_volume",
-            "FB",
-            "Date",
-            "FB_close",
-            "Date",
-            "FB_volume",
-            "GOOGL",
-            "Date",
-            "GOOGL_close",
-            "Date",
-            "GOOGL_volume",
-            "AAPL",
-            "Date",
-            "AAPL_close",
-            "Date",
-            "AAPL_volume",
-            "SPY",
-            "Date",
-            "SPY_close",
-            "TQQQ",
-            "Date",
-            "TQQQ_close",
-            "SQQQ",
-            "Date",
-            "SQQQ_close",
-            "UVXY",
-            "Date",
-            "UVXY_close",
-            "BAC",
-            "Date",
-            "BAC_close",
-            "Date",
-            "BAC_volume",
-            "NDAQ",
-            "Date",
-            "NDAQ_close",
-            "Date",
-            "NDAQ_volume",
-            "TECS",
-            "Date",
-            "TECS_close",
-            "Date",
-            "TECS_volume",
-        ]
-    ].rename(
-        columns={
-            "AMZN_close": "Close",
-            "AMZN_volume": "Volume",
-            "TSLA_close": "Close",
-            "TSLA_volume": "Volume",
-            "MSFT_close": "Close",
-            "MSFT_volume": "Volume",
-            "FB_close": "Close",
-            "FB_volume": "Volume",
-            "GOOGL_close": "Close",
-            "GOOGL_volume": "Volume",
-            "AAPL_close": "Close",
-            "AAPL_volume": "Volume",
-            "SPY_close": "Close",
-            "UVXY_close": "Close",
-            "TQQQ_close": "Close",
-            "SQQQ_close": "Close",
-            "BAC_close": "Close",
-            "BAC_volume": "Volume",
-            "NDAQ_close": "Close",
-            "NDAQ_volume": "Volume",
-            "TECS_close": "Close",
-            "TECS_volume": "Volume",
-        }
-    )
+    yf_df = yf_df[YF_DF_COLS].rename(columns=YF_DF_RENAME)
     return yf_df
 
 
@@ -516,16 +153,16 @@ def calculate_change_in_percentage(df, days, row):
         return np.nan
 
 
-def calculate_change_in_percentage_for_dfs(dfs, dfs_names):
+def calculate_change_in_percentage_for_dfs(dfs, DFS_NAMES):
     for i in range(len(dfs)):
         temp = dfs[i]
-        temp["change_in_percentage_for_1_day_" + dfs_names[i]] = temp.apply(
+        temp["change_in_percentage_for_1_day_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_change_in_percentage(temp, 1, row), axis=1
         )
-        temp["change_in_percentage_for_7_day_" + dfs_names[i]] = temp.apply(
+        temp["change_in_percentage_for_7_day_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_change_in_percentage(temp, 7, row), axis=1
         )
-        temp["change_in_percentage_for_30_day_" + dfs_names[i]] = temp.apply(
+        temp["change_in_percentage_for_30_day_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_change_in_percentage(temp, 30, row), axis=1
         )
 
@@ -541,18 +178,18 @@ def calculate_average_volume(df, days, row):
         return np.nan
 
 
-def calculate_average_volume_for_dfs(dfs, dfs_names):
+def calculate_average_volume_for_dfs(dfs, DFS_NAMES):
     for i in range(len(dfs)):
-        if dfs_names[i] in ["tqqq", "qqq", "spy", "uvxy", "sqqq"]:
+        if DFS_NAMES[i] in ["tqqq", "qqq", "spy", "uvxy", "sqqq"]:
             continue
         temp = dfs[i]
-        temp["Average_volume_for_1_day_" + dfs_names[i]] = temp.apply(
+        temp["Average_volume_for_1_day_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_average_volume(temp, 1, row), axis=1
         )
-        temp["Average_volume_for_7_day_" + dfs_names[i]] = temp.apply(
+        temp["Average_volume_for_7_day_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_average_volume(temp, 7, row), axis=1
         )
-        temp["Average_volume_for_30_day_" + dfs_names[i]] = temp.apply(
+        temp["Average_volume_for_30_day_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_average_volume(temp, 30, row), axis=1
         )
 
@@ -568,16 +205,16 @@ def calculate_average_close_price(df, days, row):
         return np.nan
 
 
-def calculate_average_close_price_for_dfs(dfs, dfs_names):
+def calculate_average_close_price_for_dfs(dfs, DFS_NAMES):
     for i in range(len(dfs)):
         temp = dfs[i]
-        temp["Average_close_price_for_1_day_" + dfs_names[i]] = temp.apply(
+        temp["Average_close_price_for_1_day_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_average_close_price(temp, 1, row), axis=1
         )
-        temp["Average_close_price_for_7_day_" + dfs_names[i]] = temp.apply(
+        temp["Average_close_price_for_7_day_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_average_close_price(temp, 7, row), axis=1
         )
-        temp["Average_close_price_for_30_day_" + dfs_names[i]] = temp.apply(
+        temp["Average_close_price_for_30_day_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_average_close_price(temp, 30, row), axis=1
         )
 
@@ -713,10 +350,10 @@ def calculate_trend(df, row):
     return trend
 
 
-def calculate_trend_for_dfs(dfs, dfs_names):
+def calculate_trend_for_dfs(dfs, DFS_NAMES):
     for i in range(len(dfs)):
         temp = dfs[i]
-        temp["days_in_a_row_for_trend_" + dfs_names[i]] = temp.apply(
+        temp["days_in_a_row_for_trend_" + DFS_NAMES[i]] = temp.apply(
             lambda row: calculate_trend(temp, row), axis=1
         )
 
@@ -733,15 +370,15 @@ def add_previous_trend(trend_col, row, trend):
     return trend_col.iloc[location]
 
 
-def add_previous_trend_for_dfs(dfs, dfs_names):
+def add_previous_trend_for_dfs(dfs, DFS_NAMES):
     for i in range(len(dfs)):
         temp = dfs[i]
-        trend_col = temp["days_in_a_row_for_trend_" + dfs_names[i]]
+        trend_col = temp["days_in_a_row_for_trend_" + DFS_NAMES[i]]
         temp["row_number"] = range(len(temp))
 
-        temp["previous_days_in_a_row_for_trend_" + dfs_names[i]] = temp.apply(
+        temp["previous_days_in_a_row_for_trend_" + DFS_NAMES[i]] = temp.apply(
             lambda row: add_previous_trend(
-                trend_col, row, row["days_in_a_row_for_trend_" + dfs_names[i]]
+                trend_col, row, row["days_in_a_row_for_trend_" + DFS_NAMES[i]]
             ),
             axis=1,
         )
@@ -764,7 +401,7 @@ def get_highest_price(df):
     return stock_dict
 
 
-def calculate_highest_prices_dict(dfs, dfs_names):
+def calculate_highest_prices_dict(dfs, DFS_NAMES):
     highest_prices_dict = {}
     for i in range(len(dfs)):
         temp = dfs[i]
@@ -774,7 +411,7 @@ def calculate_highest_prices_dict(dfs, dfs_names):
         else:
             new_record = 0
         stock_dict[datetime.today().strftime("%Y-%m-%d")] = new_record
-        highest_prices_dict[dfs_names[i]] = stock_dict
+        highest_prices_dict[DFS_NAMES[i]] = stock_dict
     return highest_prices_dict
 
 
@@ -783,12 +420,12 @@ def add_a_break_record_column(row, records_dict, stock_name):
     return records_dict[stock_name][date]
 
 
-def add_a_break_record_column_for_dfs(dfs, highest_prices_dict, dfs_names):
+def add_a_break_record_column_for_dfs(dfs, highest_prices_dict, DFS_NAMES):
     for i in range(len(dfs)):
         temp = dfs[i]
-        temp["did_break_highest_all_time_" + dfs_names[i]] = temp.apply(
+        temp["did_break_highest_all_time_" + DFS_NAMES[i]] = temp.apply(
             lambda row: add_a_break_record_column(
-                row, highest_prices_dict, dfs_names[i]
+                row, highest_prices_dict, DFS_NAMES[i]
             ),
             axis=1,
         )
@@ -933,27 +570,12 @@ def preproccesing_data(yf_df=False):
         ndaq_df,
         tecs_df,
     ]
-    dfs_names = [
-        "amzn",
-        "tsla",
-        "msft",
-        "fb",
-        "googl",
-        "aapl",
-        "spy",
-        "tqqq",
-        "sqqq",
-        "uvxy",
-        "bac",
-        "ndaq",
-        "tecs",
-    ]
 
     if not yf_df:
         change_date_for_df(dfs)
-    calculate_change_in_percentage_for_dfs(dfs, dfs_names)
-    calculate_average_volume_for_dfs(dfs, dfs_names)
-    calculate_average_close_price_for_dfs(dfs, dfs_names)
+    calculate_change_in_percentage_for_dfs(dfs, DFS_NAMES)
+    calculate_average_volume_for_dfs(dfs, DFS_NAMES)
+    calculate_average_close_price_for_dfs(dfs, DFS_NAMES)
 
     add_label_x_days_before_to_qqq_df(tqqq_df)
     add_label_x_days_to_the_future_to_qqq_df(tqqq_df)
@@ -961,10 +583,10 @@ def preproccesing_data(yf_df=False):
 
     add_label_x_days_before_to_qqq_df(sqqq_df, 1)
     add_change_for_x_days_to_the_future(sqqq_df, 1)
-    calculate_trend_for_dfs(dfs, dfs_names)
-    add_previous_trend_for_dfs(dfs, dfs_names)
-    highest_prices_dict = calculate_highest_prices_dict(dfs, dfs_names)
-    add_a_break_record_column_for_dfs(dfs, highest_prices_dict, dfs_names)
+    calculate_trend_for_dfs(dfs, DFS_NAMES)
+    add_previous_trend_for_dfs(dfs, DFS_NAMES)
+    highest_prices_dict = calculate_highest_prices_dict(dfs, DFS_NAMES)
+    add_a_break_record_column_for_dfs(dfs, highest_prices_dict, DFS_NAMES)
     merged_dfs = merge_dfs(dfs)
     merged_dfs = merged_dfs.drop(["Volume", "Close"], axis=1)
     merged_dfs["After Covid"] = merged_dfs["Date"].apply(after_covid)
@@ -990,7 +612,7 @@ def calculate_how_much_money_i_will_have(
     beggining_money = starting_money
     end_money = starting_money
     end_money_just_long = starting_money
-    clf = XGBClassifier(verbosity=0)
+    clf = XGB_CLF
 
     clf.fit(final_train_data, train_lables)  # Fit the model
     y_proba = clf.predict_proba(test_data)
@@ -1092,13 +714,13 @@ def final_split_data_into_train_test(
 
 
 def PreProccesing_train_for_final_prediction(
-    columns_to_merge_after_normalized,
-    columns_to_normalize,
-    columns_for_x,
-    column_for_y,
+    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+    COLUMNS_TO_NORMALIZE,
+    COLUMNS_FOR_X,
+    COLUMN_FOR_Y,
     column_for_real_money_check,
     column_for_real_money_check_2,
-    new_columns_for_x_temp,
+    NEW_COLUMN_FOR_X_TEMP,
     pca=False,
     adasyn=False,
     yf_df=False,
@@ -1106,14 +728,14 @@ def PreProccesing_train_for_final_prediction(
     merged_dfs = preproccesing_data(yf_df)
     x_train_temp, x_test_temp, y_train, y_test = final_split_data_into_train_test(
         merged_dfs,
-        columns_for_x,
-        column_for_y,
+        COLUMNS_FOR_X,
+        COLUMN_FOR_Y,
         column_for_real_money_check,
         column_for_real_money_check_2,
     )
 
-    x_train = x_train_temp[columns_for_x]
-    x_test = x_test_temp[columns_for_x]
+    x_train = x_train_temp[COLUMNS_FOR_X]
+    x_test = x_test_temp[COLUMNS_FOR_X]
 
     y_in_percentage_train = x_train_temp[
         column_for_real_money_check
@@ -1129,23 +751,23 @@ def PreProccesing_train_for_final_prediction(
         column_for_real_money_check_2
     ]  # .reset_index(drop=True,inplace=True)
 
-    normal_data_train, standard_scaler = Normalize_minmax(x_train[columns_to_normalize])
+    normal_data_train, standard_scaler = Normalize_minmax(x_train[COLUMNS_TO_NORMALIZE])
     data_after_normalize_train = pd.concat(
-        [x_train[columns_to_merge_after_normalized], normal_data_train], axis=1
+        [x_train[COLUMNS_TO_MERGE_AFTER_NORMALIZED], normal_data_train], axis=1
     )
-    x_train_after_normalize = data_after_normalize_train[columns_for_x]
-    normal_data_test = Normalize_minmax(x_test[columns_to_normalize], standard_scaler)
+    x_train_after_normalize = data_after_normalize_train[COLUMNS_FOR_X]
+    normal_data_test = Normalize_minmax(x_test[COLUMNS_TO_NORMALIZE], standard_scaler)
 
     data_after_normalize_test = pd.concat(
-        [x_test[columns_to_merge_after_normalized], normal_data_test], axis=1
+        [x_test[COLUMNS_TO_MERGE_AFTER_NORMALIZED], normal_data_test], axis=1
     )
 
-    x_test_after_normalize = data_after_normalize_test[columns_for_x]
+    x_test_after_normalize = data_after_normalize_test[COLUMNS_FOR_X]
     if adasyn:
         x_train_after_normalize, y_train = make_smote(x_train_after_normalize, y_train)
 
-    x_train_after_normalize = x_train_after_normalize[new_columns_for_x_temp]
-    x_test_after_normalize = x_test_after_normalize[new_columns_for_x_temp]
+    x_train_after_normalize = x_train_after_normalize[NEW_COLUMN_FOR_X_TEMP]
+    x_test_after_normalize = x_test_after_normalize[NEW_COLUMN_FOR_X_TEMP]
     if pca:
 
         data_after_pca_train, pca = pca_cols(x_train_after_normalize, 0.75)
@@ -1242,26 +864,12 @@ def organized_data_for_prediction(before_midnight, yf_df=False):
         ndaq_df,
         tecs_df,
     ]
-    dfs_names = [
-        "amzn",
-        "tsla",
-        "msft",
-        "fb",
-        "googl",
-        "aapl",
-        "spy",
-        "tqqq",
-        "sqqq",
-        "uvxy",
-        "bac",
-        "ndaq",
-        "tecs",
-    ]
+
     if not yf_df:
         change_date_for_df(dfs)
-    calculate_change_in_percentage_for_dfs(dfs, dfs_names)
-    calculate_average_volume_for_dfs(dfs, dfs_names)
-    calculate_average_close_price_for_dfs(dfs, dfs_names)
+    calculate_change_in_percentage_for_dfs(dfs, DFS_NAMES)
+    calculate_average_volume_for_dfs(dfs, DFS_NAMES)
+    calculate_average_close_price_for_dfs(dfs, DFS_NAMES)
 
     add_label_x_days_before_to_qqq_df(tqqq_df)
     add_label_x_days_to_the_future_to_qqq_df(tqqq_df)
@@ -1270,11 +878,11 @@ def organized_data_for_prediction(before_midnight, yf_df=False):
     add_change_for_x_days_to_the_future(sqqq_df, 1)
     add_label_x_days_before_to_qqq_df(sqqq_df, 1)
 
-    calculate_trend_for_dfs(dfs, dfs_names)
-    add_previous_trend_for_dfs(dfs, dfs_names)
+    calculate_trend_for_dfs(dfs, DFS_NAMES)
+    add_previous_trend_for_dfs(dfs, DFS_NAMES)
 
-    highest_prices_dict = calculate_highest_prices_dict(dfs, dfs_names)
-    add_a_break_record_column_for_dfs(dfs, highest_prices_dict, dfs_names)
+    highest_prices_dict = calculate_highest_prices_dict(dfs, DFS_NAMES)
+    add_a_break_record_column_for_dfs(dfs, highest_prices_dict, DFS_NAMES)
     merged_dfs = merge_dfs(dfs)
     merged_dfs = merged_dfs.drop(["Volume", "Close"], axis=1)
     merged_dfs["After Covid"] = merged_dfs["Date"].apply(after_covid)
@@ -1363,29 +971,15 @@ def update_merge_df(previous_merge, before_midnight, yf_df=False):
         ndaq_df,
         tecs_df,
     ]
-    dfs_names = [
-        "amzn",
-        "tsla",
-        "msft",
-        "fb",
-        "googl",
-        "aapl",
-        "spy",
-        "tqqq",
-        "sqqq",
-        "uvxy",
-        "bac",
-        "ndaq",
-        "tecs",
-    ]
+
     if not yf_df:
         change_date_for_df(dfs)
 
-    calculate_change_in_percentage_for_dfs(dfs, dfs_names)
+    calculate_change_in_percentage_for_dfs(dfs, DFS_NAMES)
 
-    calculate_average_volume_for_dfs(dfs, dfs_names)
+    calculate_average_volume_for_dfs(dfs, DFS_NAMES)
 
-    calculate_average_close_price_for_dfs(dfs, dfs_names)
+    calculate_average_close_price_for_dfs(dfs, DFS_NAMES)
 
     add_label_x_days_before_to_qqq_df(tqqq_df)
 
@@ -1397,13 +991,13 @@ def update_merge_df(previous_merge, before_midnight, yf_df=False):
 
     add_label_x_days_before_to_qqq_df(sqqq_df, 1)
 
-    calculate_trend_for_dfs(dfs, dfs_names)
+    calculate_trend_for_dfs(dfs, DFS_NAMES)
 
-    add_previous_trend_for_dfs(dfs, dfs_names)
+    add_previous_trend_for_dfs(dfs, DFS_NAMES)
 
-    highest_prices_dict = calculate_highest_prices_dict(dfs, dfs_names)
+    highest_prices_dict = calculate_highest_prices_dict(dfs, DFS_NAMES)
 
-    add_a_break_record_column_for_dfs(dfs, highest_prices_dict, dfs_names)
+    add_a_break_record_column_for_dfs(dfs, highest_prices_dict, DFS_NAMES)
 
     merged_dfs = merge_dfs(dfs)
 
@@ -1434,16 +1028,16 @@ def send_proba(clf, train_data, test_row, train_labels, threshold):
 
 def predict_today(
     df,
-    columns_for_x,
+    COLUMNS_FOR_X,
     column_for_real_money_check,
     column_for_real_money_check2,
     standard_scaler,
-    columns_to_normalize,
-    columns_to_merge_after_normalized,
-    new_columns_for_x_temp,
+    COLUMNS_TO_NORMALIZE,
+    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+    NEW_COLUMN_FOR_X_TEMP,
     pca=False,
 ):
-    x_test = df[columns_for_x]
+    x_test = df[COLUMNS_FOR_X]
     y_in_percentage_test = df[
         column_for_real_money_check
     ]  # .reset_index(drop=True,inplace=True)
@@ -1451,13 +1045,13 @@ def predict_today(
         column_for_real_money_check2
     ]  # .reset_index(drop=True,inplace=True)
 
-    normal_data_test = Normalize_minmax(x_test[columns_to_normalize], standard_scaler)
+    normal_data_test = Normalize_minmax(x_test[COLUMNS_TO_NORMALIZE], standard_scaler)
     data_after_normalize_test = pd.concat(
-        [x_test[columns_to_merge_after_normalized], normal_data_test], axis=1
+        [x_test[COLUMNS_TO_MERGE_AFTER_NORMALIZED], normal_data_test], axis=1
     )
-    x_test_after_normalize = data_after_normalize_test[columns_for_x]
+    x_test_after_normalize = data_after_normalize_test[COLUMNS_FOR_X]
 
-    x_test_after_normalize = x_test_after_normalize[new_columns_for_x_temp]
+    x_test_after_normalize = x_test_after_normalize[NEW_COLUMN_FOR_X_TEMP]
     if pca:
         data_after_pca_test = pca_cols(x_test_after_normalize, 0.75, pca)
         return data_after_pca_test, y_in_percentage_test
@@ -1470,14 +1064,14 @@ def predict_todays_direction(
     train_labels,
     threshold,
     previous_merge,
-    columns_for_x,
-    positive_column_for_real_money_check,
-    negative_column_for_real_money_check,
+    COLUMNS_FOR_X,
+    POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+    NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
     final_standard_scaler,
-    columns_to_normalize,
-    columns_to_merge_after_normalized,
-    new_columns_for_x_temp,
-    no_trading_dates,
+    COLUMNS_TO_NORMALIZE,
+    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+    NEW_COLUMN_FOR_X_TEMP,
+    NO_TRADING_DAYS,
 ):
     now = datetime.now()
     hour = now.hour
@@ -1489,20 +1083,20 @@ def predict_todays_direction(
     merged_dfs_new = update_merge_df(previous_merge, before_midnight, yf_df=True)
     x_test, y_test, negative_y_test = predict_today(
         merged_dfs_new,
-        columns_for_x,
-        positive_column_for_real_money_check,
-        negative_column_for_real_money_check,
+        COLUMNS_FOR_X,
+        POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+        NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
         final_standard_scaler,
-        columns_to_normalize,
-        columns_to_merge_after_normalized,
-        new_columns_for_x_temp,
+        COLUMNS_TO_NORMALIZE,
+        COLUMNS_TO_MERGE_AFTER_NORMALIZED,
+        NEW_COLUMN_FOR_X_TEMP,
         pca=False,
     )
 
     todays_row = pd.DataFrame(x_test.iloc[-1]).T
 
     while True:
-        if todays_row.index in no_trading_dates:
+        if todays_row.index in NO_TRADING_DAYS:
             todays_row.index = todays_row.index + timedelta(days=1)
             todays_row["Weekday"] += 1
             if list(todays_row["Weekday"])[0] == 5:
