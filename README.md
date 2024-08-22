@@ -2,7 +2,7 @@
 
 Do the following to run the code smoothly:
 
-1. git clone https://github.com/Matanp912/stocks.git
+1. git clone https://github.com/matanporcilan/stocks.git
 2. use python 3.10 and above
 3. pip install --upgrade pip
 4. pip install -r requirements.txt
