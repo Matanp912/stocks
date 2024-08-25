@@ -2,6 +2,8 @@ yfinance
 pandas
 numpy
 xgboost
-sklearn
+scikit-learn
 imblearn
 pywhatkit
+matplotlib
+shap
