@@ -1,7 +1,6 @@
 import time
 import pandas as pd
 from datetime import datetime, timedelta
-import warnings
 import pywhatkit as pwt
 
 
@@ -11,6 +10,9 @@ from utils import (
     predict_today,
     second_predict_todays_direction,
 )
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+
 from params import (
     COLUMNS_TO_MERGE_AFTER_NORMALIZED,
     COLUMNS_TO_NORMALIZE,
@@ -26,9 +28,9 @@ from params import (
 
 
 def main(
-    final_train_data_for_prediction,
-    final_train_lables_for_prediction,
-    final_standard_scaler,
+    final_train_data_for_prediction: pd.DataFrame,
+    final_train_lables_for_prediction: pd.Series,
+    final_standard_scaler: StandardScaler | MinMaxScaler,
 ):
     now = datetime.now()
     hour = now.hour
@@ -94,8 +96,7 @@ def main(
         return False, False, False
 
 
-run_me = False
-if run_me:
+if __name__ == "__main__":
     while datetime.now().hour < 23:
         now = datetime.now()
         hour = now.hour

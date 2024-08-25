@@ -34,11 +34,11 @@ pd.set_option("display.max_columns", None)
 
 
 def main_before_23(
-    final_train_data_for_prediction,
-    final_train_lables_for_prediction,
-    final_standard_scaler,
-    public=True,
-):
+    final_train_data_for_prediction: pd.DataFrame,
+    final_train_lables_for_prediction: pd.Series,
+    final_standard_scaler: StandardScaler | MinMaxScaler,
+    public: bool = True,
+) -> tuple[str, float, pd.Series]:
     if public:
         pwt.manual_send_message_to_someone(GROUP_NAME, "Making the first decision...")
 
@@ -96,7 +96,7 @@ def main_before_23(
     return action, proba, todays_row
 
 
-def create_yf_df():
+def create_yf_df() -> pd.DataFrame:
     today = str(datetime.today() + timedelta(days=1)).split(" ")[0]
     data = yf.download(
         "AMZN TSLA MSFT FB GOOGL AAPL SPY TQQQ SQQQ UVXY BAC NDAQ TECS",
@@ -129,12 +129,12 @@ def create_yf_df():
     return yf_df
 
 
-def change_date(date):
+def change_date(date: str) -> pd.Timestamp:
     day, month, year = date[0:10].split("/")
     return pd.to_datetime(year + month + day)
 
 
-def change_date_for_df(dfs):
+def change_date_for_df(dfs: list[pd.DataFrame]):
     for df in dfs:
         df["Date"] = df["Date"].apply(change_date)
         if df.shape[1] == 3:
@@ -142,7 +142,9 @@ def change_date_for_df(dfs):
         df["Close"] = df["Close"].astype(float)
 
 
-def calculate_change_in_percentage(df, days, row):
+def calculate_change_in_percentage(
+    df: pd.DataFrame, days: int, row: pd.Series
+) -> float:
     i = row.name
     if i - days > 0:
         current_price = df.iloc[i - 1, :]["Close"]
@@ -153,21 +155,23 @@ def calculate_change_in_percentage(df, days, row):
         return np.nan
 
 
-def calculate_change_in_percentage_for_dfs(dfs, DFS_NAMES):
+def calculate_change_in_percentage_for_dfs(
+    dfs: list[pd.DataFrame], dfs_names: list[str]
+):
     for i in range(len(dfs)):
         temp = dfs[i]
-        temp["change_in_percentage_for_1_day_" + DFS_NAMES[i]] = temp.apply(
+        temp["change_in_percentage_for_1_day_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_change_in_percentage(temp, 1, row), axis=1
         )
-        temp["change_in_percentage_for_7_day_" + DFS_NAMES[i]] = temp.apply(
+        temp["change_in_percentage_for_7_day_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_change_in_percentage(temp, 7, row), axis=1
         )
-        temp["change_in_percentage_for_30_day_" + DFS_NAMES[i]] = temp.apply(
+        temp["change_in_percentage_for_30_day_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_change_in_percentage(temp, 30, row), axis=1
         )
 
 
-def calculate_average_volume(df, days, row):
+def calculate_average_volume(df: pd.DataFrame, days: int, row: pd.Series) -> float:
 
     i = row.name
     if i - days > 0:
@@ -178,23 +182,23 @@ def calculate_average_volume(df, days, row):
         return np.nan
 
 
-def calculate_average_volume_for_dfs(dfs, DFS_NAMES):
+def calculate_average_volume_for_dfs(dfs: list[pd.DataFrame], dfs_names: list[str]):
     for i in range(len(dfs)):
-        if DFS_NAMES[i] in ["tqqq", "qqq", "spy", "uvxy", "sqqq"]:
+        if dfs_names[i] in ["tqqq", "qqq", "spy", "uvxy", "sqqq"]:
             continue
         temp = dfs[i]
-        temp["Average_volume_for_1_day_" + DFS_NAMES[i]] = temp.apply(
+        temp["Average_volume_for_1_day_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_average_volume(temp, 1, row), axis=1
         )
-        temp["Average_volume_for_7_day_" + DFS_NAMES[i]] = temp.apply(
+        temp["Average_volume_for_7_day_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_average_volume(temp, 7, row), axis=1
         )
-        temp["Average_volume_for_30_day_" + DFS_NAMES[i]] = temp.apply(
+        temp["Average_volume_for_30_day_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_average_volume(temp, 30, row), axis=1
         )
 
 
-def calculate_average_close_price(df, days, row):
+def calculate_average_close_price(df: pd.DataFrame, days: int, row: pd.Series) -> float:
 
     i = row.name
     if i - days > 0:
@@ -205,21 +209,21 @@ def calculate_average_close_price(df, days, row):
         return np.nan
 
 
-def calculate_average_close_price_for_dfs(dfs, DFS_NAMES):
+def calculate_average_close_price_for_dfs(dfs: list[pd.DataFrame], dfs_names):
     for i in range(len(dfs)):
         temp = dfs[i]
-        temp["Average_close_price_for_1_day_" + DFS_NAMES[i]] = temp.apply(
+        temp["Average_close_price_for_1_day_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_average_close_price(temp, 1, row), axis=1
         )
-        temp["Average_close_price_for_7_day_" + DFS_NAMES[i]] = temp.apply(
+        temp["Average_close_price_for_7_day_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_average_close_price(temp, 7, row), axis=1
         )
-        temp["Average_close_price_for_30_day_" + DFS_NAMES[i]] = temp.apply(
+        temp["Average_close_price_for_30_day_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_average_close_price(temp, 30, row), axis=1
         )
 
 
-def add_label_x_days_before(df, days, row):
+def add_label_x_days_before(df: pd.DataFrame, days: int, row: pd.Series) -> float:
     i = row.name
     if i - days > 0:
         current_price = df.iloc[i - 1, :]["Close"]
@@ -230,7 +234,7 @@ def add_label_x_days_before(df, days, row):
         return np.nan
 
 
-def add_label_x_days_before_to_qqq_df(qqq_df, sqqq=False):
+def add_label_x_days_before_to_qqq_df(qqq_df: pd.DataFrame, sqqq: bool = False):
     if not sqqq:
         qqq_df["Positive_change_in_the_last_1_day"] = qqq_df.apply(
             lambda row: add_label_x_days_before(qqq_df, 1, row), axis=1
@@ -261,7 +265,9 @@ def add_label_x_days_before_to_qqq_df(qqq_df, sqqq=False):
         )
 
 
-def add_label_x_days_to_the_future(df, days, row):
+def add_label_x_days_to_the_future(
+    df: pd.DataFrame, days: int, row: pd.Series
+) -> float:
     i = row.name
     if i - 1 < 0:
         return np.nan
@@ -273,7 +279,7 @@ def add_label_x_days_to_the_future(df, days, row):
         return np.nan
 
 
-def add_label_x_days_to_the_future_to_qqq_df(qqq_df):
+def add_label_x_days_to_the_future_to_qqq_df(qqq_df: pd.DataFrame):
     qqq_df["label_1_day"] = qqq_df.apply(
         lambda row: add_label_x_days_to_the_future(qqq_df, 1, row), axis=1
     )
@@ -285,7 +291,9 @@ def add_label_x_days_to_the_future_to_qqq_df(qqq_df):
     )
 
 
-def calculate_change_for_x_days_to_the_future(df, days, row):
+def calculate_change_for_x_days_to_the_future(
+    df: pd.DataFrame, days: int, row: pd.Series
+) -> float:
     i = row.name
     if i - 1 < 0:
         return np.nan
@@ -297,7 +305,7 @@ def calculate_change_for_x_days_to_the_future(df, days, row):
         return np.nan
 
 
-def add_change_for_x_days_to_the_future(qqq_df, sqqq=False):
+def add_change_for_x_days_to_the_future(qqq_df: pd.DataFrame, sqqq: bool = False):
     if not sqqq:
         qqq_df["tqqq_change_for_1_day"] = qqq_df.apply(
             lambda row: calculate_change_for_x_days_to_the_future(qqq_df, 1, row),
@@ -326,7 +334,7 @@ def add_change_for_x_days_to_the_future(qqq_df, sqqq=False):
         )
 
 
-def calculate_trend(df, row):
+def calculate_trend(df: pd.DataFrame, row: pd.Series) -> float:
     trend = 0
     counter = 0
     i = row.name
@@ -350,15 +358,15 @@ def calculate_trend(df, row):
     return trend
 
 
-def calculate_trend_for_dfs(dfs, DFS_NAMES):
+def calculate_trend_for_dfs(dfs: pd.DataFrame, dfs_names):
     for i in range(len(dfs)):
         temp = dfs[i]
-        temp["days_in_a_row_for_trend_" + DFS_NAMES[i]] = temp.apply(
+        temp["days_in_a_row_for_trend_" + dfs_names[i]] = temp.apply(
             lambda row: calculate_trend(temp, row), axis=1
         )
 
 
-def add_previous_trend(trend_col, row, trend):
+def add_previous_trend(trend_col: pd.Series, row: pd.Series, trend: float) -> float:
     i = row["row_number"]
     if str(trend) == "nan":
         print("NONE")
@@ -370,21 +378,21 @@ def add_previous_trend(trend_col, row, trend):
     return trend_col.iloc[location]
 
 
-def add_previous_trend_for_dfs(dfs, DFS_NAMES):
+def add_previous_trend_for_dfs(dfs: list[pd.DataFrame], dfs_names: list[str]):
     for i in range(len(dfs)):
         temp = dfs[i]
-        trend_col = temp["days_in_a_row_for_trend_" + DFS_NAMES[i]]
+        trend_col = temp["days_in_a_row_for_trend_" + dfs_names[i]]
         temp["row_number"] = range(len(temp))
 
-        temp["previous_days_in_a_row_for_trend_" + DFS_NAMES[i]] = temp.apply(
+        temp["previous_days_in_a_row_for_trend_" + dfs_names[i]] = temp.apply(
             lambda row: add_previous_trend(
-                trend_col, row, row["days_in_a_row_for_trend_" + DFS_NAMES[i]]
+                trend_col, row, row["days_in_a_row_for_trend_" + dfs_names[i]]
             ),
             axis=1,
         )
 
 
-def get_highest_price(df):
+def get_highest_price(df: pd.DataFrame) -> dict[pd.Timestamp, float]:
     stock_dict = {}
     highest_price = -10
     for i, row in df.iterrows():
@@ -401,7 +409,9 @@ def get_highest_price(df):
     return stock_dict
 
 
-def calculate_highest_prices_dict(dfs, DFS_NAMES):
+def calculate_highest_prices_dict(
+    dfs: list[pd.DataFrame], dfs_names: list[str]
+) -> dict[str, dict[pd.Timestamp, float]]:
     highest_prices_dict = {}
     for i in range(len(dfs)):
         temp = dfs[i]
@@ -411,27 +421,33 @@ def calculate_highest_prices_dict(dfs, DFS_NAMES):
         else:
             new_record = 0
         stock_dict[datetime.today().strftime("%Y-%m-%d")] = new_record
-        highest_prices_dict[DFS_NAMES[i]] = stock_dict
+        highest_prices_dict[dfs_names[i]] = stock_dict
     return highest_prices_dict
 
 
-def add_a_break_record_column(row, records_dict, stock_name):
+def add_a_break_record_column(
+    row: pd.Series, records_dict: dict[str, dict[pd.Timestamp, float]], stock_name: str
+) -> float:
     date = row["Date"]
     return records_dict[stock_name][date]
 
 
-def add_a_break_record_column_for_dfs(dfs, highest_prices_dict, DFS_NAMES):
+def add_a_break_record_column_for_dfs(
+    dfs: list[pd.DataFrame],
+    highest_prices_dict: dict[str, dict[pd.Timestamp, float]],
+    dfs_names: list[str],
+):
     for i in range(len(dfs)):
         temp = dfs[i]
-        temp["did_break_highest_all_time_" + DFS_NAMES[i]] = temp.apply(
+        temp["did_break_highest_all_time_" + dfs_names[i]] = temp.apply(
             lambda row: add_a_break_record_column(
-                row, highest_prices_dict, DFS_NAMES[i]
+                row, highest_prices_dict, dfs_names[i]
             ),
             axis=1,
         )
 
 
-def merge_dfs(dfs):
+def merge_dfs(dfs: list[pd.DataFrame]) -> pd.DataFrame:
     joined_df = dfs[0]
     for df in dfs[1:]:
         joined_df = pd.concat([joined_df, df.drop(["Date"], axis=1)], axis=1)
@@ -439,8 +455,8 @@ def merge_dfs(dfs):
 
 
 # standard_scaler
-def Normalize(Dataframe, standard_scaler=False):
-    df_2 = Dataframe.select_dtypes(
+def Normalize(df: pd.DataFrame, standard_scaler: bool = False) -> pd.DataFrame:
+    df_2 = df.select_dtypes(
         include=["float64", "int64"]
     )  # Create a data with the types that we want
     if not standard_scaler:
@@ -458,8 +474,8 @@ def Normalize(Dataframe, standard_scaler=False):
         )  # We transforn our test according the train set
 
 
-def Normalize_minmax(Dataframe, minmax_scaler=False):
-    df_2 = Dataframe.select_dtypes(
+def Normalize_minmax(df: pd.DataFrame, minmax_scaler: bool = False) -> pd.DataFrame:
+    df_2 = df.select_dtypes(
         include=["float64", "int64"]
     )  # Create a data with the types that we want
     if not minmax_scaler:  # If it's the train data (there is no scaler)
@@ -477,11 +493,11 @@ def Normalize_minmax(Dataframe, minmax_scaler=False):
         )  # We transforn our test according the train set
 
 
-def after_covid(date):
+def after_covid(date: pd.Timestamp) -> int:
     return int(date > pd.to_datetime("2019-12-01"))
 
 
-def pca_cols(relevant_data, threshold, pca=False):
+def pca_cols(relevant_data: pd.DataFrame, threshold: float, pca: bool = False):
     if not pca:
         pca_num = PCA(n_components=relevant_data.shape[1])  # Initialize PCA object
         pca_num = pca_num.fit(relevant_data)  # Fit the model with the data
@@ -523,19 +539,19 @@ def pca_cols(relevant_data, threshold, pca=False):
         return data_after_pca
 
 
-def make_adasyn(x, y):
+def make_adasyn(x: pd.DataFrame, y: pd.Series) -> tuple[pd.DataFrame, pd.Series]:
     ad = ADASYN(random_state=42)  # create adasyn object
     X_res, y_res = ad.fit_resample(x, y)  # fit&resample on adasyn with the data
     return X_res, y_res
 
 
-def make_smote(x, y):
+def make_smote(x: pd.DataFrame, y: pd.Series) -> tuple[pd.DataFrame, pd.Series]:
     sm = SMOTE(sampling_strategy=1, random_state=42)  # create adasyn object
     X_res, y_res = sm.fit_resample(x, y)  # fit&resample on adasyn with the data
     return X_res, y_res
 
 
-def preproccesing_data(yf_df=False):
+def preproccesing_data(yf_df: bool = False) -> pd.DataFrame:
 
     df = create_yf_df()
     tqqq_df = df.iloc[:, [34, 35]]
@@ -599,15 +615,15 @@ def preproccesing_data(yf_df=False):
 
 
 def calculate_how_much_money_i_will_have(
-    starting_money,
-    threshold,
+    starting_money: float,
+    threshold: float,
     clf,
-    final_train_data,
-    test_data,
-    train_lables,
-    y_in_percentage_test,
-    negative_y_in_percentage_test,
-    with_short=False,
+    final_train_data: pd.DataFrame,
+    test_data: pd.DataFrame,
+    train_lables: pd.Series,
+    y_in_percentage_test: pd.Series,
+    negative_y_in_percentage_test: pd.Series,
+    with_short: bool = False,
 ):
     beggining_money = starting_money
     end_money = starting_money
@@ -674,7 +690,9 @@ def plot_lineplot(x, y_model, y_stock):
     plt.show()
 
 
-def show_y_proba_with_change_in_stocks(tqqq_change, sqqq_change, y_proba):
+def show_y_proba_with_change_in_stocks(
+    tqqq_change: pd.Series, sqqq_change: pd.Series, y_proba: pd.Series
+) -> pd.DataFrame:
     temp_df = pd.DataFrame(tqqq_change)
     temp_df["sqqq change for 1 day"] = sqqq_change
     temp_df["y_proba"] = y_proba
@@ -682,12 +700,12 @@ def show_y_proba_with_change_in_stocks(tqqq_change, sqqq_change, y_proba):
 
 
 def final_split_data_into_train_test(
-    all_data,
-    features,
-    label,
-    column_for_real_money_check,
-    column_for_real_money_check_2,
-):
+    all_data: pd.DataFrame,
+    features: pd.DataFrame,
+    label: pd.Series,
+    column_for_real_money_check: str,
+    column_for_real_money_check_2: str,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     x = all_data[
         features + [column_for_real_money_check] + [column_for_real_money_check_2]
     ]
@@ -714,28 +732,28 @@ def final_split_data_into_train_test(
 
 
 def PreProccesing_train_for_final_prediction(
-    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
-    COLUMNS_TO_NORMALIZE,
-    COLUMNS_FOR_X,
-    COLUMN_FOR_Y,
-    column_for_real_money_check,
-    column_for_real_money_check_2,
-    NEW_COLUMN_FOR_X_TEMP,
-    pca=False,
-    adasyn=False,
-    yf_df=False,
+    columns_to_merge_after_normalized: list[str],
+    columns_to_normalize: list[str],
+    columns_for_x: list[str],
+    columns_for_y: list[str],
+    column_for_real_money_check: str,
+    column_for_real_money_check_2: str,
+    new_column_for_x_temp: str,
+    pca: bool = False,
+    adasyn: bool = False,
+    yf_df: bool = False,
 ):
     merged_dfs = preproccesing_data(yf_df)
     x_train_temp, x_test_temp, y_train, y_test = final_split_data_into_train_test(
         merged_dfs,
-        COLUMNS_FOR_X,
-        COLUMN_FOR_Y,
+        columns_for_x,
+        columns_for_y,
         column_for_real_money_check,
         column_for_real_money_check_2,
     )
 
-    x_train = x_train_temp[COLUMNS_FOR_X]
-    x_test = x_test_temp[COLUMNS_FOR_X]
+    x_train = x_train_temp[columns_for_x]
+    x_test = x_test_temp[columns_for_x]
 
     y_in_percentage_train = x_train_temp[
         column_for_real_money_check
@@ -751,23 +769,23 @@ def PreProccesing_train_for_final_prediction(
         column_for_real_money_check_2
     ]  # .reset_index(drop=True,inplace=True)
 
-    normal_data_train, standard_scaler = Normalize_minmax(x_train[COLUMNS_TO_NORMALIZE])
+    normal_data_train, standard_scaler = Normalize_minmax(x_train[columns_to_normalize])
     data_after_normalize_train = pd.concat(
-        [x_train[COLUMNS_TO_MERGE_AFTER_NORMALIZED], normal_data_train], axis=1
+        [x_train[columns_to_merge_after_normalized], normal_data_train], axis=1
     )
-    x_train_after_normalize = data_after_normalize_train[COLUMNS_FOR_X]
-    normal_data_test = Normalize_minmax(x_test[COLUMNS_TO_NORMALIZE], standard_scaler)
+    x_train_after_normalize = data_after_normalize_train[columns_for_x]
+    normal_data_test = Normalize_minmax(x_test[columns_to_normalize], standard_scaler)
 
     data_after_normalize_test = pd.concat(
-        [x_test[COLUMNS_TO_MERGE_AFTER_NORMALIZED], normal_data_test], axis=1
+        [x_test[columns_to_merge_after_normalized], normal_data_test], axis=1
     )
 
-    x_test_after_normalize = data_after_normalize_test[COLUMNS_FOR_X]
+    x_test_after_normalize = data_after_normalize_test[columns_for_x]
     if adasyn:
         x_train_after_normalize, y_train = make_smote(x_train_after_normalize, y_train)
 
-    x_train_after_normalize = x_train_after_normalize[NEW_COLUMN_FOR_X_TEMP]
-    x_test_after_normalize = x_test_after_normalize[NEW_COLUMN_FOR_X_TEMP]
+    x_train_after_normalize = x_train_after_normalize[new_column_for_x_temp]
+    x_test_after_normalize = x_test_after_normalize[new_column_for_x_temp]
     if pca:
 
         data_after_pca_train, pca = pca_cols(x_train_after_normalize, 0.75)
@@ -795,7 +813,7 @@ def PreProccesing_train_for_final_prediction(
     )
 
 
-def organized_data_for_prediction(before_midnight, yf_df=False):
+def organized_data_for_prediction(before_midnight: bool, yf_df: bool = False):
 
     df = create_yf_df()
     new_row = [0] * df.shape[1]
@@ -896,7 +914,9 @@ def organized_data_for_prediction(before_midnight, yf_df=False):
     return merged_dfs
 
 
-def update_merge_df(previous_merge, before_midnight, yf_df=False):
+def update_merge_df(
+    previous_merge: pd.DataFrame, before_midnight: bool, yf_df: bool = False
+) -> pd.DataFrame:
     df = create_yf_df()
     df = df.iloc[-10:, :].reset_index(drop=True)
 
@@ -1014,7 +1034,13 @@ def update_merge_df(previous_merge, before_midnight, yf_df=False):
     return pd.DataFrame(new_merge)
 
 
-def send_proba(clf, train_data, test_row, train_labels, threshold):
+def send_proba(
+    clf,
+    train_data: pd.DataFrame,
+    test_row: pd.Series,
+    train_labels: pd.Series,
+    threshold: float,
+) -> tuple[float, str]:
     clf.fit(train_data, train_labels)  # Fit the model
     y_proba = clf.predict_proba(test_row)
     y_proba = y_proba[0][1]
@@ -1027,17 +1053,17 @@ def send_proba(clf, train_data, test_row, train_labels, threshold):
 
 
 def predict_today(
-    df,
-    COLUMNS_FOR_X,
-    column_for_real_money_check,
-    column_for_real_money_check2,
-    standard_scaler,
-    COLUMNS_TO_NORMALIZE,
-    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
-    NEW_COLUMN_FOR_X_TEMP,
-    pca=False,
-):
-    x_test = df[COLUMNS_FOR_X]
+    df: pd.DataFrame,
+    columns_for_x: list[str],
+    column_for_real_money_check: str,
+    column_for_real_money_check2: str,
+    standard_scaler: StandardScaler | MinMaxScaler,
+    columns_to_normalize: list[str],
+    columns_to_merge_after_normalized: list[str],
+    new_column_for_x_temp: str,
+    pca: bool = False,
+) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
+    x_test = df[columns_for_x]
     y_in_percentage_test = df[
         column_for_real_money_check
     ]  # .reset_index(drop=True,inplace=True)
@@ -1045,13 +1071,13 @@ def predict_today(
         column_for_real_money_check2
     ]  # .reset_index(drop=True,inplace=True)
 
-    normal_data_test = Normalize_minmax(x_test[COLUMNS_TO_NORMALIZE], standard_scaler)
+    normal_data_test = Normalize_minmax(x_test[columns_to_normalize], standard_scaler)
     data_after_normalize_test = pd.concat(
-        [x_test[COLUMNS_TO_MERGE_AFTER_NORMALIZED], normal_data_test], axis=1
+        [x_test[columns_to_merge_after_normalized], normal_data_test], axis=1
     )
-    x_test_after_normalize = data_after_normalize_test[COLUMNS_FOR_X]
+    x_test_after_normalize = data_after_normalize_test[columns_for_x]
 
-    x_test_after_normalize = x_test_after_normalize[NEW_COLUMN_FOR_X_TEMP]
+    x_test_after_normalize = x_test_after_normalize[new_column_for_x_temp]
     if pca:
         data_after_pca_test = pca_cols(x_test_after_normalize, 0.75, pca)
         return data_after_pca_test, y_in_percentage_test
@@ -1060,19 +1086,19 @@ def predict_today(
 
 def predict_todays_direction(
     clf,
-    train_data,
-    train_labels,
-    threshold,
-    previous_merge,
-    COLUMNS_FOR_X,
-    POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
-    NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
-    final_standard_scaler,
-    COLUMNS_TO_NORMALIZE,
-    COLUMNS_TO_MERGE_AFTER_NORMALIZED,
-    NEW_COLUMN_FOR_X_TEMP,
-    NO_TRADING_DAYS,
-):
+    train_data: pd.DataFrame,
+    train_labels: pd.Series,
+    threshold: float,
+    previous_merge: pd.DataFrame,
+    columns_for_x: list[str],
+    positive_column_for_real_money_check: str,
+    negative_column_for_real_money_check: str,
+    final_standard_scaler: StandardScaler | MinMaxScaler,
+    columns_to_normalize: list[str],
+    columns_to_merge_after_normalized: list[str],
+    new_column_for_x_temp: str,
+    no_trading_days: list[str],
+) -> tuple[float, str, pd.Series]:
     now = datetime.now()
     hour = now.hour
     minute = now.minute
@@ -1081,22 +1107,22 @@ def predict_todays_direction(
     else:
         before_midnight = True
     merged_dfs_new = update_merge_df(previous_merge, before_midnight, yf_df=True)
-    x_test, y_test, negative_y_test = predict_today(
+    x_test, _, _ = predict_today(
         merged_dfs_new,
-        COLUMNS_FOR_X,
-        POSITIVE_COLUMN_FOR_REAL_MONEY_CHECK,
-        NEGATIVE_COLUMN_FOR_REAL_MONEY_CHECK,
+        columns_for_x,
+        positive_column_for_real_money_check,
+        negative_column_for_real_money_check,
         final_standard_scaler,
-        COLUMNS_TO_NORMALIZE,
-        COLUMNS_TO_MERGE_AFTER_NORMALIZED,
-        NEW_COLUMN_FOR_X_TEMP,
+        columns_to_normalize,
+        columns_to_merge_after_normalized,
+        new_column_for_x_temp,
         pca=False,
     )
 
     todays_row = pd.DataFrame(x_test.iloc[-1]).T
 
     while True:
-        if todays_row.index in NO_TRADING_DAYS:
+        if todays_row.index in no_trading_days:
             todays_row.index = todays_row.index + timedelta(days=1)
             todays_row["Weekday"] += 1
             if list(todays_row["Weekday"])[0] == 5:
@@ -1113,8 +1139,12 @@ def predict_todays_direction(
 
 
 def second_predict_todays_direction(
-    clf, train_data, test_row, train_labels, threshold=0.15
-):
+    clf,
+    train_data: pd.DataFrame,
+    test_row: pd.Series,
+    train_labels: pd.Series,
+    threshold: float = 0.15,
+) -> tuple[float, str]:
     clf.fit(train_data, train_labels)  # Fit the model
     y_proba = clf.predict_proba(test_row)
     y_proba = y_proba[0][1]
